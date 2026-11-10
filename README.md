@@ -79,7 +79,7 @@ server-side branch protection for real enforcement.
 
 Security and git conventions Claude follows in every project: no secrets in git or output,
 branches + PRs instead of commits to main, no force-push or hook skipping, commit only when asked,
-ask before destructive commands.
+ask before destructive commands, no `cd` for one-off operations (absolute paths, `git -C`, subshells).
 
 ## Adding things
 
