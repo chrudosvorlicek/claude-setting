@@ -25,6 +25,7 @@ Then open `/hooks` in Claude Code once, or restart it, so hook changes are loade
 | `global/CLAUDE.md` | `~/.claude/CLAUDE.md` | symlink |
 | `global/settings.json` | merged into `~/.claude/settings.json` | jq merge, `@REPO@` → repo path |
 | `skills/*`, `agents/*`, `commands/*` | `~/.claude/<same dir>/<name>` | symlink per item (folders created when needed) |
+| `global/mcp.json` | user-scope MCP servers in `~/.claude.json` | `claude mcp add --scope user` |
 
 `settings.json` is merged rather than linked because Claude Code writes to it itself (theme,
 `/config`, approvals). The merge keeps your own keys, merges permission lists, and adds hooks
@@ -75,6 +76,25 @@ server-side branch protection for real enforcement.
 - **Deny reading:** `.env` variants, `*.pem`, `*.key`, SSH keys, `~/.ssh`, `~/.aws`, gh and Claude credentials
 - **Ask first:** `git reset --hard`, `git clean`, `git branch -D`, `git filter-branch`, `git filter-repo`, `rm -rf`
 
+### MCP dev tools (`global/mcp.json`)
+
+Registered for all projects (user scope). The installer adds a server only when its
+prerequisites are on `PATH`; otherwise it prints `skip` with the install command, so install
+the tool and re-run `./install.sh`.
+
+| Server | What it's for | Install prerequisites |
+|---|---|---|
+| `serena` | LSP-backed symbol navigation and editing: find symbol, references, rename. Uses the `claude-code` context and `--project-from-cwd` (activates the nearest `.serena/project.yml` or `.git`). | `uv tool install -p 3.13 serena-agent && serena init` |
+| `codegraphcontext` | Code graph: call chains, dependencies, "who calls X". Embedded FalkorDB Lite, no Docker needed. Index a repo once with `cgc index .` (or ask Claude to index it). | `uv tool install codegraphcontext --with falkordblite` |
+| `ast-grep` | Structural (syntax-tree) search for precise refactors. | `uv`, plus the ast-grep CLI: `cargo install ast-grep --locked` or `brew install ast-grep` (note: `/usr/bin/sg` on Linux is usually shadow-utils, not ast-grep) |
+| `context7` | Up-to-date, version-specific library docs (remote HTTP server). | none |
+
+Serena is used instead of Claude Code's LSP plugins; don't enable both for the same language.
+
+If you already have a server with the same name configured differently, the installer leaves it
+alone (`keep`). `--uninstall` removes only servers whose config still matches `global/mcp.json`.
+If Serena is slow to start, `export MCP_TIMEOUT=60000` in your shell profile.
+
 ### Global rules (`global/CLAUDE.md`)
 
 Security and git conventions Claude follows in every project: no secrets in git or output,
@@ -85,4 +105,6 @@ ask before destructive commands, no `cd` for one-off operations (absolute paths,
 
 - **Rule:** edit `global/CLAUDE.md` (live immediately).
 - **Setting / permission / hook:** edit `global/settings.json`, use `@REPO@` for paths into this repo, run `./install.sh`.
+- **MCP server:** add an entry to `global/mcp.json` (`command` array for stdio or `url` for HTTP,
+  `requires` binaries, `install` hint), run `./install.sh`.
 - **Skill / agent / command:** add it under `skills/<name>/`, `agents/<name>.md` or `commands/<name>.md`, run `./install.sh`.

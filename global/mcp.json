@@ -1,0 +1,28 @@
+{
+  "servers": {
+    "serena": {
+      "description": "LSP-backed symbol navigation and editing (find symbol, references, rename)",
+      "command": ["serena", "start-mcp-server", "--context", "claude-code", "--project-from-cwd"],
+      "requires": ["serena"],
+      "install": "uv tool install -p 3.13 serena-agent && serena init"
+    },
+    "codegraphcontext": {
+      "description": "Code graph: call chains, dependencies, who-calls-what (index a repo once with: cgc index .)",
+      "command": ["cgc", "mcp", "start"],
+      "requires": ["cgc"],
+      "install": "uv tool install codegraphcontext --with falkordblite"
+    },
+    "ast-grep": {
+      "description": "Structural (syntax-tree) code search for precise refactors",
+      "command": ["uvx", "--from", "git+https://github.com/ast-grep/ast-grep-mcp", "ast-grep-server"],
+      "requires": ["uvx", "ast-grep"],
+      "install": "cargo install ast-grep --locked   (or: brew install ast-grep)"
+    },
+    "context7": {
+      "description": "Up-to-date, version-specific library documentation",
+      "url": "https://mcp.context7.com/mcp",
+      "requires": [],
+      "install": ""
+    }
+  }
+}
