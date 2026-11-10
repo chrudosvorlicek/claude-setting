@@ -25,6 +25,17 @@ Project CLAUDE.md files add to these; they don't replace them.
 - Ask before destructive commands: `git reset --hard`, `git clean`, `git branch -D`,
   rewriting published history.
 
+## Shell
+
+- Don't `cd` for one-off operations. Stay in the project directory and point the command at its
+  target instead, so later commands don't run in the wrong place and files don't land in the wrong folder:
+  - absolute paths: `ls /path/to/dir`, `cat /path/to/file`
+  - the tool's own directory flag: `git -C <dir>`, `make -C <dir>`, `npm --prefix <dir>`,
+    `tar -C <dir>`, `docker compose -f <dir>/compose.yml`
+  - if a command must run inside another directory, use a subshell so the change can't leak:
+    `(cd <dir> && <command>)`
+- Change directory only when the user asks to work in that directory from then on.
+
 ## Enforcement
 
 A PreToolUse hook (`hooks/git-guard.sh` in claude-setting) blocks the git rules above and scans
