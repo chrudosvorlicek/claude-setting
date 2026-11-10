@@ -14,15 +14,16 @@
     },
     "ast-grep": {
       "description": "Structural (syntax-tree) code search for precise refactors",
-      "command": ["uvx", "--from", "git+https://github.com/ast-grep/ast-grep-mcp", "ast-grep-server"],
-      "requires": ["uvx", "ast-grep"],
-      "install": "uv tool install ast-grep-cli"
+      "command": ["ast-grep-server"],
+      "requires": ["ast-grep-server", "ast-grep"],
+      "install": "uv tool install ast-grep-cli && uv tool install git+https://github.com/ast-grep/ast-grep-mcp"
     },
-    "context7": {
-      "description": "Up-to-date, version-specific library documentation",
-      "url": "https://mcp.context7.com/mcp",
-      "requires": [],
-      "install": ""
+    "docs": {
+      "description": "Local library documentation index (docs-mcp-server, full-text search, no telemetry)",
+      "command": ["docker", "run", "-i", "--rm", "-e", "DOCS_MCP_TELEMETRY=false", "-v", "docs-mcp-data:/data",
+                  "ghcr.io/arabold/docs-mcp-server:latest", "--protocol", "stdio"],
+      "requires": ["docker"],
+      "install": "docker pull ghcr.io/arabold/docs-mcp-server:latest"
     }
   }
 }

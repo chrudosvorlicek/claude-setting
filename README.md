@@ -78,7 +78,9 @@ server-side branch protection for real enforcement.
 
 ### MCP dev tools (`global/mcp.json`)
 
-Registered for all projects (user scope). The installer adds a server only when its
+Registered for all projects (user scope). Every server runs locally: no hosted services, and
+no code or queries leave the machine (network is used only to install tools and to scrape docs
+you ask for). The installer adds a server only when its
 prerequisites are on `PATH`; otherwise it prints `skip` with the install command, so install
 the tool and re-run `./install.sh`.
 
@@ -86,8 +88,11 @@ the tool and re-run `./install.sh`.
 |---|---|---|
 | `serena` | LSP-backed symbol navigation and editing: find symbol, references, rename. Uses the `claude-code` context and `--project-from-cwd` (activates the nearest `.serena/project.yml` or `.git`). | `uv tool install -p 3.13 serena-agent && serena init` |
 | `codegraphcontext` | Code graph: call chains, dependencies, "who calls X". Embedded FalkorDB Lite, no Docker needed. Index a repo once with `cgc index .` (or ask Claude to index it). | `uv tool install codegraphcontext --with falkordblite` |
-| `ast-grep` | Structural (syntax-tree) search for precise refactors. | `uv tool install ast-grep-cli` (or `cargo install ast-grep --locked` / `brew install ast-grep`). It also installs an `sg` alias in `~/.local/bin` that shadows shadow-utils' `/usr/bin/sg`; delete it if you need the system one. |
-| `context7` | Up-to-date, version-specific library docs (remote HTTP server). | none |
+| `ast-grep` | Structural (syntax-tree) search for precise refactors. | `uv tool install ast-grep-cli && uv tool install git+https://github.com/ast-grep/ast-grep-mcp`. `ast-grep-cli` also installs an `sg` alias in `~/.local/bin` that shadows shadow-utils' `/usr/bin/sg`; delete it if you need the system one. |
+| `docs` | Library docs you index yourself ([docs-mcp-server](https://github.com/arabold/docs-mcp-server) in Docker, no Node needed). Full-text search over a local SQLite index in the `docs-mcp-data` volume; telemetry off. Ask Claude to index a library (`scrape_docs` tool), or run `docker run --rm -v docs-mcp-data:/data ghcr.io/arabold/docs-mcp-server:latest scrape <lib> <docs-url>`. | Docker, then `docker pull ghcr.io/arabold/docs-mcp-server:latest` |
+
+Context7 was considered for docs but left out: it's a hosted service (the npm package also
+calls its API).
 
 Serena is used instead of Claude Code's LSP plugins; don't enable both for the same language.
 
