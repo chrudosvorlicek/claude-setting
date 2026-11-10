@@ -1,0 +1,29 @@
+{
+  "servers": {
+    "serena": {
+      "description": "LSP-backed symbol navigation and editing (find symbol, references, rename)",
+      "command": ["serena", "start-mcp-server", "--context", "claude-code", "--project-from-cwd"],
+      "requires": ["serena"],
+      "install": "uv tool install -p 3.13 serena-agent && serena init"
+    },
+    "codegraphcontext": {
+      "description": "Code graph: call chains, dependencies, who-calls-what (index a repo once with: cgc index .)",
+      "command": ["cgc", "mcp", "start"],
+      "requires": ["cgc"],
+      "install": "uv tool install codegraphcontext --with falkordblite"
+    },
+    "ast-grep": {
+      "description": "Structural (syntax-tree) code search for precise refactors",
+      "command": ["ast-grep-server"],
+      "requires": ["ast-grep-server", "ast-grep"],
+      "install": "uv tool install ast-grep-cli && uv tool install git+https://github.com/ast-grep/ast-grep-mcp"
+    },
+    "docs": {
+      "description": "Local library documentation index (docs-mcp-server, full-text search, no telemetry)",
+      "command": ["docker", "run", "-i", "--rm", "-e", "DOCS_MCP_TELEMETRY=false", "-v", "docs-mcp-data:/data",
+                  "ghcr.io/arabold/docs-mcp-server:latest", "--protocol", "stdio"],
+      "requires": ["docker"],
+      "install": "docker pull ghcr.io/arabold/docs-mcp-server:latest"
+    }
+  }
+}

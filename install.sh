@@ -10,6 +10,7 @@
 #   - links each item in skills/, agents/, commands/ into ~/.claude/<same dir>/
 #   - merges global/settings.json into ~/.claude/settings.json (@REPO@ = this folder);
 #     your own settings are kept, arrays are merged, hooks are de-duplicated by command
+#   - registers MCP servers from global/mcp.json at user scope (skips ones whose tools are missing)
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
@@ -24,7 +25,7 @@ case "${1:-}" in
   "") ;;
   --dry-run)   MODE=dry ;;
   --uninstall) MODE=uninstall ;;
-  -h|--help)   sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  -h|--help)   sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
   *) echo "unknown option: $1 (see --help)" >&2; exit 1 ;;
 esac
 
@@ -102,6 +103,62 @@ write_settings() {  # write_settings <jq-program>
   fi
 }
 
+# --- MCP servers (global/mcp.json -> user scope via `claude mcp`) --------------------
+# Servers are registered only when their prerequisites are on PATH; missing ones are
+# reported with an install hint. Existing servers with the same name are left alone,
+# and uninstall removes a server only if its config still matches ours.
+MCP_FILE="$REPO/global/mcp.json"
+if [[ -n "${CLAUDE_CONFIG_DIR:-}" ]]; then USER_CFG="$CLAUDE_CONFIG_DIR/.claude.json"; else USER_CFG="$HOME/.claude.json"; fi
+
+mcp_current() {  # mcp_current <name> -> prints the user-scope server JSON, or nothing
+  [[ -f "$USER_CFG" ]] || return 0
+  jq -c --arg n "$1" '.mcpServers[$n] // empty' "$USER_CFG"
+}
+
+mcp_is_ours() {  # mcp_is_ours <name> <current-json>
+  jq -e --argjson cur "$2" --arg n "$1" '.servers[$n] as $s
+    | if $s.url then $cur.url == $s.url
+      else ([$cur.command] + ($cur.args // [])) == $s.command end' "$MCP_FILE" >/dev/null
+}
+
+mcp_sync() {
+  [[ -f "$MCP_FILE" ]] || return 0
+  if ! command -v claude >/dev/null; then say "skip    MCP servers (claude CLI not on PATH)"; return; fi
+  local name cur missing hint req
+  for name in $(jq -r '.servers | keys[]' "$MCP_FILE"); do
+    cur=$(mcp_current "$name")
+    if [[ $MODE == uninstall ]]; then
+      if [[ -n "$cur" ]] && mcp_is_ours "$name" "$cur"; then
+        say "remove  mcp $name"; claude mcp remove --scope user "$name" >/dev/null || say "error   mcp $name (claude mcp remove failed)"
+      fi
+      continue
+    fi
+    if [[ -n "$cur" ]]; then
+      if mcp_is_ours "$name" "$cur"; then say "ok      mcp $name"
+      else say "keep    mcp $name (already configured differently; left as is)"; fi
+      continue
+    fi
+    missing=()
+    for req in $(jq -r --arg n "$name" '.servers[$n].requires[]' "$MCP_FILE"); do
+      command -v "$req" >/dev/null || missing+=("$req")
+    done
+    if (( ${#missing[@]} )); then
+      hint=$(jq -r --arg n "$name" '.servers[$n].install' "$MCP_FILE")
+      say "skip    mcp $name (missing: ${missing[*]}; install: $hint)"
+      continue
+    fi
+    local -a add=(claude mcp add --scope user)
+    if jq -e --arg n "$name" '.servers[$n].url' "$MCP_FILE" >/dev/null; then
+      add+=(--transport http "$name" "$(jq -r --arg n "$name" '.servers[$n].url' "$MCP_FILE")")
+    else
+      mapfile -t cmd < <(jq -r --arg n "$name" '.servers[$n].command[]' "$MCP_FILE")
+      add+=("$name" -- "${cmd[@]}")
+    fi
+    say "add     mcp $name"
+    if [[ $MODE == dry ]]; then say "[dry-run] ${add[*]}"; else "${add[@]}" >/dev/null || say "error   mcp $name (claude mcp add failed)"; fi
+  done
+}
+
 # --- run ----------------------------------------------------------------------------
 echo "claude-setting: $MODE  (repo: $REPO, target: $CLAUDE_DIR)"
 
@@ -111,6 +168,7 @@ if [[ $MODE == uninstall ]]; then
     for p in "$CLAUDE_DIR/$d"/*; do [[ -L "$p" ]] && unlink_ours "$p"; done
   done
   write_settings "$UNMERGE"
+  mcp_sync
   echo "done. Backups of your previous files are kept as *.bak.<timestamp>."
   exit 0
 fi
@@ -125,6 +183,7 @@ for d in "${LINK_DIRS[@]}"; do
   done
 done
 write_settings "$MERGE"
+mcp_sync
 
 [[ $MODE == dry ]] && { echo "dry run, nothing changed."; exit 0; }
 echo "done. Open /hooks or restart Claude Code to load hook changes."
