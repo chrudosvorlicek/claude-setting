@@ -16,7 +16,7 @@
       "description": "Structural (syntax-tree) code search for precise refactors",
       "command": ["uvx", "--from", "git+https://github.com/ast-grep/ast-grep-mcp", "ast-grep-server"],
       "requires": ["uvx", "ast-grep"],
-      "install": "cargo install ast-grep --locked   (or: brew install ast-grep)"
+      "install": "uv tool install ast-grep-cli"
     },
     "context7": {
       "description": "Up-to-date, version-specific library documentation",

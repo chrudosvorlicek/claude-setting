@@ -86,7 +86,7 @@ the tool and re-run `./install.sh`.
 |---|---|---|
 | `serena` | LSP-backed symbol navigation and editing: find symbol, references, rename. Uses the `claude-code` context and `--project-from-cwd` (activates the nearest `.serena/project.yml` or `.git`). | `uv tool install -p 3.13 serena-agent && serena init` |
 | `codegraphcontext` | Code graph: call chains, dependencies, "who calls X". Embedded FalkorDB Lite, no Docker needed. Index a repo once with `cgc index .` (or ask Claude to index it). | `uv tool install codegraphcontext --with falkordblite` |
-| `ast-grep` | Structural (syntax-tree) search for precise refactors. | `uv`, plus the ast-grep CLI: `cargo install ast-grep --locked` or `brew install ast-grep` (note: `/usr/bin/sg` on Linux is usually shadow-utils, not ast-grep) |
+| `ast-grep` | Structural (syntax-tree) search for precise refactors. | `uv tool install ast-grep-cli` (or `cargo install ast-grep --locked` / `brew install ast-grep`). It also installs an `sg` alias in `~/.local/bin` that shadows shadow-utils' `/usr/bin/sg`; delete it if you need the system one. |
 | `context7` | Up-to-date, version-specific library docs (remote HTTP server). | none |
 
 Serena is used instead of Claude Code's LSP plugins; don't enable both for the same language.
